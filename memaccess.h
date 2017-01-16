@@ -323,7 +323,7 @@ STATIC rw8 REGP2 ModifyAtEA_b(ashort mode,ashort r)
 STATIC rw16 REGP2 ModifyAtEA_w(ashort mode,ashort r)
 {  
   /*w16*/ shindex displ;
-  w32     addr;
+  w32     addr=0;
 
 #ifndef QM_BIG_ENDIAN
   isreg=0;
@@ -502,7 +502,7 @@ STATIC rw16 REGP2 ModifyAtEA_w(ashort mode,ashort r)
 STATIC rw32 REGP2 ModifyAtEA_l(ashort mode,ashort r)
 {   
   /*w16*/ shindex displ;
-  w32     addr;
+  w32     addr=0;
 
 #ifndef QM_BIG_ENDIAN
   isreg=0;
