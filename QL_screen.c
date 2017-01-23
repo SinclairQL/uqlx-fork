@@ -77,7 +77,7 @@ void QClip(int *x1, int *y1, int *w,int *h)
  */
 void QL2Pixmap2 (w32 st, char *data, w32 from,w32 to)
 {
-  int r1, r2, ri1, ri2, color, lastcolor,cc;
+  int r1, r2, ri1, ri2, color, lastcolor = 0, cc;
   int i, k;
   char *r;
   long dist;
@@ -430,62 +430,42 @@ extern int rx1,rx2,ry1,ry2,finishflag;
 
 void conv_chunk(w32 from, w32 to)
 {
-  int x1,x2,y1,y2,width,height;
-  
-  
+  int x1,x2,y1,y2;
+
+
   if (from<qlscreen.qm_lo) from=qlscreen.qm_lo;
   if (to>qlscreen.qm_hi) to=qlscreen.qm_hi;
-  
+
   /* old code had wrong assumption that linel==2**n :( */
-#if 1
   x1=(((from-qlscreen.qm_lo)%(qlscreen.linel)))*4;
   x2=min((((to-qlscreen.qm_lo)%(qlscreen.linel)))*4+4,qlscreen.xres-1);
 
   y1=(from-qlscreen.qm_lo)/qlscreen.linel;
   y2=(to-qlscreen.qm_lo)/qlscreen.linel;
-#else
-  x1=(from&(qlscreen.linel-1))*4;
-  x2=min((to&(qlscreen.linel-1))*4+4,qlscreen.xres-1);
-
-  y1=(from-qlscreen.qm_lo)/qlscreen.linel;
-  y2=(to-qlscreen.qm_lo)/qlscreen.linel;
-#endif
-
-#ifdef TEST_REDRAW
-  printf("conv_chunk %d %d ",from-qlscreen.qm_lo,to-qlscreen.qm_lo);
-#endif
 
   if(y1!=y2) { x1=0; x2=qlscreen.xres-1; }
- 
+
   if (x1>rx1) x1=rx1;
   if (x2<rx2) x2=rx2;
   if (y1>ry1) y1=ry1;
   if (y2<ry2) y2=ry2;
-#if 0  
-  width=min((x2-x1+4),qlscreen.xres);
-  height=min((y2-y1+1),qlscreen.yres);
-#endif
-  
+
   (*QL2Pixmap)(vbase,xi_buf, from, to);
 
   displayFrom=displayTo=0;
 
   rx1=x1; rx2=x2;
   ry1=y1; ry2=y2;
-
-#ifdef TEST_REDRAW
-  printf("  %d,%d x %d,%d\n",rx1,rx2,ry1,ry2);
-#endif
 }
 
 
 void do_scrconv()
 {
-  int i,ii,xfrom,xto; 
+  int i,ii,xfrom,xto;
   long *ascr,*oscr;
 
   char *nxpage;
-  
+
   xfrom=xto=i=0;
 
 next_page:
@@ -495,56 +475,46 @@ next_page:
       i++;
     }
   if (i>=sct_size) goto x_exit;
-  
+
   ascr=(long *)((char*)theROM+qlscreen.qm_lo+PAGEX(i));
-  //printf("%d,\t%d\n",oscr,PAGEX(i));
-  
+
   oscr=(long*)((char*)oldscr+PAGEX(i));
   nxpage=(char*)oldscr+PAGEX(i+1)+2*sizeof(*oscr);
 
   if (nxpage>(char*)oldscr+qlscreen.qm_len)
     nxpage=(char*)oldscr+qlscreen.qm_len;
-  
-  /*scrModTable[i]=0;*/
 
 next_change:
-  while( *ascr++ == *oscr++ && 
+  while( *ascr++ == *oscr++ &&
 	 ((char *)oscr <= nxpage) /*(char*)oldscr+32768+sizeof(*oscr))*/  );
 
   // -- stopped by crossing page boundary? continue with next page
-  if ((char *)oscr > nxpage /*&& *(ascr-1)==*(oscr-1)*/ ) 
+  if ((char *)oscr > nxpage )
     {
       scrModTable[i]=0;
       goto next_page;
     }
 
-  //printf("i1 %d\t\t",i);
-  
   i= PAGEI((char*)(oscr-2)-oldscr);
   nxpage=(char*)oldscr+PAGEX(i+1)+2*sizeof(*oscr);
   if (nxpage>(char*)oldscr+qlscreen.qm_len)
     nxpage=(char*)oldscr+qlscreen.qm_len;
-  
 
-  //printf("i2 %d\n",i);
   // -- point to start of diff area again
   ascr--;
   oscr--;
-  
+
   xfrom=(w32)((char*)ascr-(char*)theROM);
   ii=i;
-  
+
   while( (char *)oscr<(char*)oldscr+qlscreen.qm_len+2*sizeof(long) &&
-	 *ascr++!=*oscr++ )  
+	 *ascr++!=*oscr++ )
     *(oscr-1)=*(ascr-1);    /* actualise cmp/shadow buffer */
 
-  /*if ((char *)oscr >= oldscr+(i+1)*pagesize+2*sizeof(*oscr)) /*goto next_page;*/
-
   i=(int)PAGEI((char*)oscr-oldscr);
-  //printf("page: %d, state %d\n",i,scrModTable[i]);
-  
+
   xto=(w32)((char*)ascr-(char*)theROM);
-  
+
   if(xfrom<qlscreen.qm_hi)
     conv_chunk(xfrom,xto);
 
@@ -557,18 +527,14 @@ next_change:
 x_exit:
   for(i=0;i<sct_size;i++) scrModTable[i]=0;
 
-  //uqlx_prestore(qlscreen.qm_lo,qlscreen.qm_hi-qlscreen.qm_lo/*,QX_SCR*/);
-#if 1 /* hack, above did loose some updates */
+
   // must not change protecion before memory test has completed
-  // otherwise would result in erroneous sys.rtop 
+  // otherwise would result in erroneous sys.rtop
   if (do_update)
     uqlx_protect(qlscreen.qm_lo,qlscreen.qm_len,QX_SCR);
-#endif
 
   if (finishflag)
     draw_chunk();
-
-  //printf("exiting scrconv\n");
 }
 
 
@@ -636,29 +602,16 @@ void redraw_screen( int x1,int y1,int width,int height)
 {
   int x2,y2;
 
-#if 0
- printf("redraw screen: %d,%d %d,%d\n",x1,y1,x1+width,y1+height); 
-#endif
   x2=x1+width;
   y2=y1+height;
 
   if (x1>rx1) x1=rx1;
   if (x2<rx2) x2=rx2;
   if (y1>ry1) y1=ry1;
-  if (y2<ry2) y2=ry2; 
-
-#if 0
- printf(".... combined to: %d,%d %d,%d\n",x1,y1,x2,y2); 
-#endif
+  if (y2<ry2) y2=ry2;
 
  QClip(&x1,&y1,&width,&height);
 
-#if 0
- printf("... clipped to: %d,%d %d,%d\n",x1,y1,width,height); 
-#endif
-
- 
-#ifdef SH_MEM
    if (shmflag)
       XShmPutImage(display,imagewin,gc,image,
                    x1,y1,            /* src x,y */
@@ -666,15 +619,11 @@ void redraw_screen( int x1,int y1,int width,int height)
 		   width,height,     /* width,heigth */
 		   False);
    else
-#endif
       XPutImage(display, imagewin, gc, image,
-	      x1, y1,        
-	      x1, y1,        
-	      width, height ); 
-  
-      rx1=qlscreen.xres;rx2=0;ry1=qlscreen.yres;ry2=0; /* nothing to do*/
+	      x1, y1,
+	      x1, y1,
+	      width, height );
 
-  /*XFlush (display); */ /* done in x.c:process_events*/
-
+  rx1=qlscreen.xres;rx2=0;ry1=qlscreen.yres;ry2=0; /* nothing to do*/
 }
 
