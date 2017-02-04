@@ -102,6 +102,8 @@ int pageshift=12;
 
 void cleanup_dialog (){}
 
+extern int zoom;
+
 int InitDialog ()
 {
    if (pwindow == NULL)
@@ -756,7 +758,7 @@ void SetParams (int ac, char **av)
    *sysrom=0;
   
 #ifndef NO_GETOPT 
-   while((c = getopt(ac,av,"f:micnhr:o:s:b:g:W:p?::v:")) != EOF)
+   while((c = getopt(ac,av,"f:micnhr:o:s:b:g:W:p?::v:z:")) != EOF)
    {
       switch(c)
       {
@@ -827,6 +829,11 @@ void SetParams (int ac, char **av)
             else
                usage(av);
             break;
+         case 'z':
+            zoom=atoi(optarg);
+            if (!zoom) zoom=1;
+            break;
+
          default: 
             usage(av);
       }

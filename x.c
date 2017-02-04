@@ -37,6 +37,7 @@
 #include <X11/extensions/XShm.h>
 
 static XShmSegmentInfo shminfo;
+static XShmSegmentInfo zshminfo;
 static int shm_used;
 #endif
 
@@ -52,6 +53,8 @@ Cursor cursor1,cursor0;
 extern int invisible;
 extern int start_iconic;
 extern char *pwindow;
+
+int zoom = 2;
 
 #if 0
 static Widget topLevel;
@@ -93,6 +96,7 @@ static XGCValues gc_val;
 
 Window imagewin;		/* window ID for image */
 XImage *image = NULL;
+XImage *zimage = NULL;  /* Image to hold zoomed view */
 Cursor cursor;
 Pixmap empty;
 int planes;
@@ -100,6 +104,7 @@ int pbytes;
 
 
 char *xi_buf;
+char *zxi_buf;
 
 #ifdef SH_MEM
 static int shmct;
@@ -155,57 +160,54 @@ void x_screen_close (void)
 
 static void create_image (int w, int h, int format)
 {
-  int planes = depth;
-  
-#ifdef SH_MEM
-   if (shmflag)
-   {
-      image = XShmCreateImage (display, visual, planes, format,
-			       NULL, &shminfo, w, h);
-      shminfo.shmid = shmget (IPC_PRIVATE, image->bytes_per_line
-			      * image->height * ((planes+7)/8), IPC_CREAT | 0777);
-      xi_buf = shminfo.shmaddr = image->data = shmat (shminfo.shmid, 0, 0);
-      shminfo.readOnly = False;
-      XShmAttach (display, &shminfo);
-      XSync(display, False);
-      shmctl(shminfo.shmid, IPC_RMID, 0);
-      shm_used = 1;
+    int planes = depth;
 
-#ifdef QM_BIG_ENDIAN
-      image -> bitmap_bit_order = MSBFirst;
-      image -> byte_order = MSBFirst;
-#else
-      image -> bitmap_bit_order = LSBFirst;
-      image -> byte_order = LSBFirst;
-#endif
+    int pbytes;
+    if (planes<8) pbytes=1;
+    else if (planes<16) pbytes=2;
+    else pbytes=4;
 
-      XShmPutImage(display,imagewin,gc,image,0,0,0,0,10,10,False);
-      XSync(display,False);
-   }
+    if (shmflag)
+    {
+        image = XShmCreateImage (display, visual, planes, format,
+		            NULL, &shminfo, w * zoom, h * zoom);
+        shminfo.shmid = shmget (IPC_PRIVATE, image->bytes_per_line
+			        * image->height * ((planes+7)/8), IPC_CREAT | 0777);
+        zxi_buf = shminfo.shmaddr = image->data = shmat (shminfo.shmid, 0, 0);
+        shminfo.readOnly = False;
+        XShmAttach (display, &shminfo);
+        XSync(display, False);
+        shmctl(shminfo.shmid, IPC_RMID, 0);
+        if (zoom == 1)
+            xi_buf = zxi_buf;
+        else
+            xi_buf = malloc(w*h*pbytes);
 
-   /* XShmPutImage might have failed, setting shmflag=0 ! */
-   if (!shmflag)
-#endif
-   {
-      int pbytes;
-      if (planes<8) pbytes=1;
-      else if (planes<16) pbytes=2;
-      else pbytes=4;
+        shm_used = 1;
 
-      xi_buf= malloc(w*h*pbytes+256);
-      
-      image = XCreateImage (display, visual, planes, format,
-			    0, (char *) xi_buf, w, h, 8, 0);
+        image -> bitmap_bit_order = LSBFirst;
+        image -> byte_order = LSBFirst;
+
+        XShmPutImage(display,imagewin,gc,image,0,0,0,0,10,10,False);
+
+        XSync(display,False);
     }
 
-#ifdef QM_BIG_ENDIAN
-   image -> bitmap_bit_order = MSBFirst;
-   image -> byte_order = MSBFirst;
-#else
+    /* XShmPutImage might have failed, setting shmflag=0 ! */
+    if (!shmflag)
+    {
+
+        xi_buf= malloc(w*h*pbytes+256);
+        if (zoom == 1)
+            zxi_buf = xi_buf;
+        else
+            zxi_buf = malloc(w*h*pbytes*zoom*zoom+256);
+        image = XCreateImage (display, visual, planes, format,
+			        0, (char *) zxi_buf, w * zoom, h * zoom, 8, 0);
+    }
+
    image -> bitmap_bit_order = LSBFirst;
    image -> byte_order = LSBFirst;
-#endif
-   /*Image = image->data;*/
 }
 
 /* Process all events that occured since we last came here...
@@ -239,7 +241,7 @@ void process_events (void)
 	  break;
 	case ResizeRequest:
 	  /* my way of making it not resizeable... */
-	  XResizeWindow(display, imagewin, scr_width, scr_height);
+	  XResizeWindow(display, imagewin, scr_width * zoom, scr_height * zoom);
 	case KeyPress:
 	  xql_key (&e, 1);
 	  inside=1;
@@ -648,7 +650,7 @@ void x_screen_open (int frk)
   attributes.colormap=cmap;
   
   imagewin = XCreateWindow (display, RootWindow (display, screen),
-			    h.x, h.y, h.width, h.height, 0, depth,
+			    h.x, h.y, h.width * zoom, h.height * zoom, 0, depth,
 			    InputOutput, visual, valuemask, &attributes);
   XSetWindowColormap(display,imagewin,cmap);
   

@@ -41,14 +41,17 @@ screen_specs qlscreen =
 extern int screen_drawable;
 extern int colors[8];
 extern char *xi_buf;
+extern char *zxi_buf;
 extern int pbytes;
 extern int display_mode;
+extern int scr_width, scr_height, zoom;
 
 extern int shmflag;
 extern Display *display;
 extern Window imagewin;
 extern GC gc;
 extern XImage *image;
+extern XImage *zimage;
 extern int planes,plane2;
 
 /* zona del display modificata; 0=nessuna modifica */
@@ -575,24 +578,35 @@ void draw_chunk()
   printf("...drawing %d,%d    %d,%d\n",rx1,ry1,width,height);
 #endif
   
-#ifdef SH_MEM
-  if (shmflag) 
-    XShmPutImage(display,imagewin,gc,image,
-		 rx1,ry1,            /* src x,y */
-		 rx1,ry1,             /* dest x,y */
-		 width, height,     /* width,heigth */
-		 False);
-  else 
-#endif
-    XPutImage(display, imagewin, gc, image,
-		 rx1, ry1,        
-		 rx1, ry1,        
-		 width, height ); 
+    if (zoom > 1) {
+        int x, y, z;
+        uint32_t *in = xi_buf, *out = zxi_buf;
 
-  rx1=qlscreen.xres;rx2=0;ry1=qlscreen.yres;ry2=0;
-  /*displayFrom=displayTo=0;*/
+        for (y = 0; y < scr_height * zoom; y++) {
+          for (x = 0; x < scr_width; x++) {
+              //printf("draw X:%d\n", x);
+              for (z = 0; z < zoom; z++) {
+                  out[(y * scr_width * zoom) + (x*zoom) + z] = in[((y/zoom) * scr_width) + x];
+              }
+          }
+        }
+    }
 
-  XFlush (display);
+    if (shmflag) {
+        XShmPutImage(display,imagewin,gc,image,
+		            rx1 * zoom, ry1 * zoom,            /* src x,y */
+		            rx1 * zoom, ry1 * zoom,             /* dest x,y */
+		            width * zoom, height * zoom,     /* width,heigth */
+		            False);
+    } else {
+        XPutImage(display, imagewin, gc, image,
+                    rx1 * zoom, ry1 * zoom,
+		            rx1 * zoom, ry1 * zoom,
+		            width * zoom, height *zoom);
+    }
+    rx1=qlscreen.xres;rx2=0;ry1=qlscreen.yres;ry2=0;
+
+    XFlush (display);
   /*process_events();*/
 
 }
@@ -600,30 +614,42 @@ void draw_chunk()
 
 void redraw_screen( int x1,int y1,int width,int height)
 {
-  int x2,y2;
+    int x2,y2;
 
-  x2=x1+width;
-  y2=y1+height;
+    x2=x1+width;
+    y2=y1+height;
 
-  if (x1>rx1) x1=rx1;
-  if (x2<rx2) x2=rx2;
-  if (y1>ry1) y1=ry1;
-  if (y2<ry2) y2=ry2;
+    if (x1>rx1) x1=rx1;
+    if (x2<rx2) x2=rx2;
+    if (y1>ry1) y1=ry1;
+    if (y2<ry2) y2=ry2;
 
- QClip(&x1,&y1,&width,&height);
+    QClip(&x1,&y1,&width,&height);
 
-   if (shmflag)
-      XShmPutImage(display,imagewin,gc,image,
-                   x1,y1,            /* src x,y */
-		   x1,y1,             /* dest x,y */
-		   width,height,     /* width,heigth */
-		   False);
-   else
-      XPutImage(display, imagewin, gc, image,
-	      x1, y1,
-	      x1, y1,
-	      width, height );
+    if (zoom > 1) {
+        int x, y, z;
+        uint32_t *in = xi_buf, *out = zxi_buf;
 
-  rx1=qlscreen.xres;rx2=0;ry1=qlscreen.yres;ry2=0; /* nothing to do*/
+        for (y = 0; y < scr_height * zoom; y++) {
+            for (x = 0; x < scr_width; x++) {
+                for (z = 0; z < zoom; z++) {
+                    out[(y * scr_width * zoom) + (x*zoom) + z] = in[((y/zoom) * scr_width) + x];
+                }
+            }
+        }
+    }
+    if (shmflag) {
+        XShmPutImage(display,imagewin,gc,image,
+                    x1 * zoom, y1 * zoom,            /* src x,y */
+		            x1 * zoom, y1 * zoom,             /* dest x,y */
+		            width * zoom, height * zoom,     /* width,heigth */
+		            False);
+    } else {
+            XPutImage(display, imagewin, gc, image,
+		                rx1 * zoom, ry1 * zoom,
+		                rx1 * zoom, ry1 * zoom,
+		                width * zoom, height * zoom);
+    }
+    rx1=qlscreen.xres;rx2=0;ry1=qlscreen.yres;ry2=0; /* nothing to do*/
 }
 
