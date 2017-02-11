@@ -206,7 +206,7 @@ extern int nInst;    /* dangerous - it is 'volatile' to some extent */
 #define ASSGN_CODE(val) (code = (unsigned)(unsigned short)val)
 #endif
 
-#if defined(__x86_64__)
+#if defined(__x86_64__) || defined(__aarch64__)
 #define HUGE_POINTER
 #endif
 
