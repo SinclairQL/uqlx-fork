@@ -241,7 +241,7 @@ extern volatile char    pendingInterrupt;
 
 #ifdef NEW_AREG
 #define   aReg  (reg+8)
-#define   sp    (aReg+7)
+#define   m68k_sp    (aReg+7)
 extern w32      *g_reg;
 #else
 extern w32              *sp;
