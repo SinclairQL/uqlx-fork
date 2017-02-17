@@ -739,7 +739,7 @@ void usage(char **argv)
           "\t\t -b 'boot_cmd'       : define BOOT device with boot_cmd \n"
           "\t\t -s 'boot_cmd'       :    .. and do scripting \n"
           "\t\t -g NxM              : define screen size to NxM \n"
-          "\t\t -z zoom             : zoom level of display default=2 \n"
+          "\t\t -z zoom             : zoom level of display default=2 max 4\n"
           "\t\t -v num              : set verbosity\n"
           "\t\t -W window           : reparent root window \n"
           "\t\t -n                  : dont patch anything (xuse only)\n\n"
@@ -832,7 +832,8 @@ void SetParams (int ac, char **av)
             break;
          case 'z':
             zoom=atoi(optarg);
-            if (!zoom) zoom=1;
+            if (zoom<=1) zoom=1;
+            if (zoom>4) zoom=2;
             break;
 
          default: 
