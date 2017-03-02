@@ -57,12 +57,12 @@ typedef struct
 
 static short is_big_endian;
 
-ushort inline swapword (ushort val)
+static ushort swapword (ushort val)
 {
     return (is_big_endian) ? val : (ushort) (val << 8) + (val >> 8);
 }
 
-ulong inline swaplong (ulong val)
+static ulong swaplong (ulong val)
 {
     return (is_big_endian) ? val :
 	(ulong) (((ulong) swapword (val & 0xFFFF) << 16) |

@@ -1,4 +1,4 @@
 CC = gcc
-CFLAGS = -g
+CFLAGS = -g -m32
 
 all:  qcp qls
