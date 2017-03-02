@@ -302,7 +302,8 @@ void process_events (void)
 	case MotionNotify: 
 	  if (e.xmotion.window == imagewin)
 	    {
-	      QLMovePointer(((XMotionEvent *)&e)->x,((XMotionEvent *)&e)->y);
+	      QLMovePointer(((XMotionEvent *)&e)->x / zoom,
+                  ((XMotionEvent *)&e)->y / zoom);
 	      /*fprintf (stderr, "Pointer: %d,%d\n", ((XMotionEvent *)&e)->x,((XMotionEvent *)&e)->y); */
 	      inside=1;
 	    }
