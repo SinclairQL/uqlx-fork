@@ -133,17 +133,17 @@ fi
 
 gcc -o vmtest vmtest.c 1>&2 2>>conf.log
 
-if [ -n "$testvm" -a  -z "$EXACT_HW" ] ; then
-    if ./vmtest 2>>conf.log ; then
-	GCC_XFLAGS=" -DUSE_VM"
-    else
-	decho "vmtest failed, falling back to EVM_SCR" 
-	decho "for m68k kernels get newest patch from rz@linux-m68k.org" 
-	GCC_XFLAGS=" -DEVM_SCR";
-    fi
-else
+#if [ -n "$testvm" -a  -z "$EXACT_HW" ] ; then
+#    if ./vmtest 2>>conf.log ; then
+#	GCC_XFLAGS=" -DUSE_VM"
+#    else
+#	decho "vmtest failed, falling back to EVM_SCR"
+#	decho "for m68k kernels get newest patch from rz@linux-m68k.org"
+#	GCC_XFLAGS=" -DEVM_SCR";
+#    fi
+#else
     GCC_XFLAGS=" -DEVM_SCR";
-fi
+#fi
 
 if ./vmtest 2>>conf.log; then
    gcc -o zmtest zmtest.c 1>&2 2>>conf.log
