@@ -32,7 +32,7 @@
  */
 
 #ifdef SERIAL
-
+#define _XOPEN_SOURCE
 /*#include "QLtypes.h"*/
 #include "QL68000.h"
 
