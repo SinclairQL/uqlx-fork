@@ -12,6 +12,7 @@
 
 /* needed for ntoh? functions */
 #include <arpa/inet.h>
+#include <stdint.h>
 
 #undef QM_BIG_ENDIAN
 
