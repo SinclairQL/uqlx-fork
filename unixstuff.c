@@ -71,9 +71,7 @@ extern void FlushDisplay (void);
 
 extern void DbgInfo (void);
 
-#ifdef AUTO_BOOT
 void btrap3 (void);
-#endif
 
 extern void SchedulerCmd (void);
 extern void KbdCmd (void);
@@ -1098,9 +1096,9 @@ void uqlxInit ()
       table[KBENC_CMD_CODE] = KBencCmd;
    }
    table[BASEXT_CMD_CODE]=BASEXTCmd;
-#ifdef AUTO_BOOT
-   table[0x4e43] = btrap3;
-#endif
+
+   if (QMD.skip_boot)
+   	table[0x4e43] = btrap3;
   
 #ifdef NEW_AREG
    g_reg = reg;
