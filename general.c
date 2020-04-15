@@ -20,8 +20,6 @@ void debug2(char*,long);
 
 extern void vmMarkScreen(uw32 /*addr*/);
 
-void    (**table)(void);
-
 #ifdef DEBUG
 int trace_rts=0;
 #endif

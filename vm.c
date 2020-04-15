@@ -18,12 +18,6 @@
 /*
  * catch VM errors that resulted from read/write to QL HW/special memory areas
  */
-
-char *oldscr;
-long pagesize;
-int pageshift;
-
-
 extern int main();
 extern int strcasecmp();
 extern uw32 rtop_hard;
@@ -31,7 +25,6 @@ extern int is_patching;
 extern int rtc_emu_on;
 
 char *scrModTable;
-int sct_size;
 int faultaddr;
 int vm_ison=0;
 
